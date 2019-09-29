@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
               $("#customInfoDeleteBox").fadeOut("slow");
 
               calendar.refetchEvents();
-             
+
 
               customAlert(" Event deleted", "fa fa-trash", "green");
             } else {
@@ -236,7 +236,6 @@ document.addEventListener('DOMContentLoaded', function () {
     $(".closeCreateEventFormButton").click(e => {
       $(".customBackground").fadeOut("slow");
       $("#eventCreateForm").fadeOut("slow");
-
       clearFormData();
     });
   }
@@ -263,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
   function selectForm(arg) {
-
+    var eventTitle = null;
 
     $(".customBackground").css("width", $(document).width());
     $(".customBackground").css("height", $(document).height());
@@ -272,11 +271,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     $("#miniEventSubmitModalButton").click(e => {
 
-      var eventTitle = $("input[name='mini-title']").val();
+      eventTitle = $("input[name='mini-title']").val();
 
-      if (eventTitle != "") {
+      if (eventTitle != null) {
 
         var iid = uuidv4();
+
+        console.log(arg.start)
 
         var dt = '{"title":"' + eventTitle + '","start":' + Date.parse(arg.start) + ',"end":' + Date.parse(arg.end) + ', "id":"'+ iid +'","allDay":'+arg.allDay+'}'
 
@@ -296,13 +297,8 @@ document.addEventListener('DOMContentLoaded', function () {
             /*close create form*/
             $(".customBackground").fadeOut("slow");
             $("#miniEventCreateForm").fadeOut("slow");
-             calendar.addEvent({
-                  id: iid,
-                  title: eventTitle,
-                  start: arg.start,
-                  end: arg.end,
-                  allDay: false
-              })
+
+            calendar.refetchEvents();
 
             customAlert(" Event Created", "fa fa-check-circle", "green");
           } else {
@@ -346,8 +342,42 @@ document.addEventListener('DOMContentLoaded', function () {
     resizable:true,
     selectMirror: false,
     select: function (arg) {
-      console.log("with in select call");
-      selectForm(arg);
+       var title = prompt("Enter title");
+       if(title!=null){
+       var iid = uuidv4();
+         var dt = '{"title":"' + title + '","start":' + Date.parse(arg.start) + ',"end":' + Date.parse(arg.end) + ', "id":"'+ iid +'","allDay":'+arg.allDay+'}'
+
+          $.ajax({
+            url: "/calender/addEvent",
+            contentType: "application/json",
+            method: "POST",
+            data: dt,
+            headers: {
+              'Csrf-Token': $("input[name='csrfToken']").val()
+            }
+          }).done(function (data) {
+
+            if (JSON.stringify(data) === '{"status":200}') {
+              /*first clear form data*/
+              $("input[name='title']").val("");
+              /*close create form*/
+              $(".customBackground").fadeOut("slow");
+              $("#miniEventCreateForm").fadeOut("slow");
+
+              calendar.refetchEvents();
+
+              customAlert(" Event Created", "fa fa-check-circle", "green");
+            } else {
+
+              customAlert(" Event not created", "fa fa-warning", "red");
+
+            }
+
+          }).fail(function (jqXHR, textStatus, error) {
+              customAlert("Network Error", "fa fa-warning", "red");
+          });
+       }
+
       calendar.unselect();
     },
 
